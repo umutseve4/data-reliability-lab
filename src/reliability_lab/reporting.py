@@ -46,7 +46,5 @@ def write_report(
     quarantine_slo: float = 0.05,
 ) -> dict:
     report = build_report(db_path, quarantine_slo=quarantine_slo)
-    Path(output).write_text(
-        json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8"
-    )
+    Path(output).write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return report
