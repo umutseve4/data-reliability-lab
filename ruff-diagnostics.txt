@@ -1,3 +1,1 @@
-src/reliability_lab/contracts.py:35:39: UP038 Use `X | Y` in `isinstance` call instead of `(X, Y)`
-Found 1 error.
-No fixes available (1 hidden fix can be enabled with the `--unsafe-fixes` option).
+All checks passed!
