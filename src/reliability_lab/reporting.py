@@ -29,13 +29,24 @@ def build_report(db_path: str | Path, *, quarantine_slo: float = 0.05) -> dict:
             "met": ratio <= quarantine_slo,
         },
         "runs": {"total": totals["total_runs"], "failed": totals["failed_runs"]},
-        "rows": {"input": input_rows, "quarantined": totals["quarantined_rows"], "pending_replay": pending},
+        "rows": {
+            "input": input_rows,
+            "quarantined": totals["quarantined_rows"],
+            "pending_replay": pending,
+        },
     }
     db.close()
     return report
 
 
-def write_report(db_path: str | Path, output: str | Path, *, quarantine_slo: float = 0.05) -> dict:
+def write_report(
+    db_path: str | Path,
+    output: str | Path,
+    *,
+    quarantine_slo: float = 0.05,
+) -> dict:
     report = build_report(db_path, quarantine_slo=quarantine_slo)
-    Path(output).write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    Path(output).write_text(
+        json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+    )
     return report

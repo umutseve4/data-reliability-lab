@@ -11,7 +11,13 @@ from reliability_lab.reporting import build_report, write_report
 
 
 def event(event_id: str = "evt-1") -> dict:
-    return {"event_id": event_id, "occurred_at": "2026-01-01T00:00:00Z", "source": "orders-api", "metric": "rows_processed", "value": 5}
+    return {
+        "event_id": event_id,
+        "occurred_at": "2026-01-01T00:00:00Z",
+        "source": "orders-api",
+        "metric": "rows_processed",
+        "value": 5,
+    }
 
 
 class PipelineTests(unittest.TestCase):
@@ -36,7 +42,8 @@ class PipelineTests(unittest.TestCase):
         second = ingest_records([event()], self.db)
         self.assertEqual((second.accepted_rows, second.duplicate_rows), (0, 1))
         with self.connect() as db:
-            self.assertEqual(db.execute("SELECT COUNT(*) FROM bronze_events").fetchone()[0], 1)
+            count = db.execute("SELECT COUNT(*) FROM bronze_events").fetchone()[0]
+            self.assertEqual(count, 1)
 
     def test_quarantines_contract_violation(self) -> None:
         result = ingest_records([{**event(), "value": -1}], self.db)
@@ -57,7 +64,9 @@ class PipelineTests(unittest.TestCase):
     def test_lineage_is_recorded(self) -> None:
         result = ingest_records([event()], self.db)
         with self.connect() as db:
-            row = db.execute("SELECT * FROM lineage_edges WHERE run_id=?", (result.run_id,)).fetchone()
+            row = db.execute(
+                "SELECT * FROM lineage_edges WHERE run_id=?", (result.run_id,)
+            ).fetchone()
         self.assertEqual(row["source_asset"], "jsonl:raw_events")
         self.assertEqual(row["target_asset"], "sqlite:bronze_events")
         self.assertEqual(row["row_count"], 1)
@@ -70,7 +79,10 @@ class PipelineTests(unittest.TestCase):
     def test_replay_accepts_repaired_payload(self) -> None:
         ingest_records([{**event(), "value": -1}], self.db)
         with self.connect() as db:
-            db.execute("UPDATE quarantine_events SET payload=?", (json.dumps(event("repaired")),))
+            db.execute(
+                "UPDATE quarantine_events SET payload=?",
+                (json.dumps(event("repaired")),),
+            )
             db.commit()
         result = replay_quarantine(self.db)
         self.assertEqual(result["replayed"], 1)
