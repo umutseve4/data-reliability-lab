@@ -70,13 +70,13 @@ reliability-lab run --source data/events.jsonl --db artifacts/lab.db
 | Failure persistence | `test_failed_run_is_persisted` |
 | Lineage | `test_lineage_is_recorded` |
 | SLO calculation | report tests and CI artifact |
-| Reproducibility | `Dockerfile`, `docker-compose.yml`, CI matrix |
+| Reproducibility | `Dockerfile`, `docker-compose.yml`, CI matrix and `container-smoke` job |
 
 ## Status vocabulary
 
 - **Implemented:** the vertical slice and its tests are present.
 - **Locally tested:** all `15` tests and the end-to-end smoke run passed in the development environment.
-- **Remotely verified:** only after the current `main` GitHub Actions run passes for Python 3.11, 3.12 and 3.13.
+- **Remotely verified:** only after the current `main` GitHub Actions run passes for lint, format, Python 3.11/3.12/3.13 tests, CLI smoke and container smoke.
 - **Deployed:** not applicable; this is an executable lab, not a hosted service.
 - **Production-ready:** no.
 
@@ -86,7 +86,7 @@ reliability-lab run --source data/events.jsonl --db artifacts/lab.db
 - Replay currently expects a repaired payload to be written back before retry.
 - Lineage is table-level rather than column-level.
 - No orchestrator, alert transport, cloud object store or PostgreSQL adapter is implemented.
-- GitHub Actions are version-tag pinned; immutable commit-SHA pinning remains a hardening task.
+- Container base-image digest pinning and automated SBOM generation remain hardening tasks.
 
 ## Next acceptance gate
 
