@@ -5,17 +5,17 @@ from __future__ import annotations
 import json
 import sqlite3
 import uuid
+from collections.abc import Iterable
 from dataclasses import asdict, dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Iterable
 
 from .contracts import ContractViolation, validate_event
 from .store import connect
 
 
 def utc_now() -> str:
-    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    return datetime.now(UTC).isoformat().replace("+00:00", "Z")
 
 
 @dataclass(frozen=True)
@@ -146,7 +146,8 @@ def replay_quarantine(db_path: str | Path) -> dict[str, int]:
     run_id = str(uuid.uuid4())
     replayed = still_invalid = 0
     rows = db.execute(
-        "SELECT quarantine_id, payload FROM quarantine_events WHERE status='pending' ORDER BY quarantine_id"
+        "SELECT quarantine_id, payload FROM quarantine_events "
+        "WHERE status='pending' ORDER BY quarantine_id"
     ).fetchall()
     for row in rows:
         attempted_at = utc_now()
