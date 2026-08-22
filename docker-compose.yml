@@ -1,0 +1,14 @@
+services:
+  reliability-lab:
+    build: .
+    command: ["run", "--source", "data/events.jsonl", "--db", "/artifacts/lab.db"]
+    volumes:
+      - reliability-artifacts:/artifacts
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+
+volumes:
+  reliability-artifacts:
