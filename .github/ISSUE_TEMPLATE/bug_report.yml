@@ -1,0 +1,26 @@
+name: Reliability bug
+about: Report a reproducible contract, ingestion, replay, lineage or SLO defect
+title: "bug: "
+labels: [bug]
+body:
+  - type: textarea
+    id: failure
+    attributes:
+      label: Failure mode
+      description: What reliability invariant failed?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Reproduction
+      description: Provide the smallest input and command that reproduce the defect.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence
+      description: Include output, affected commit and environment details. Remove secrets and private data.
+    validations:
+      required: true

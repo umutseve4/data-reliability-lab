@@ -4,7 +4,13 @@ import unittest
 
 from reliability_lab.contracts import ContractViolation, validate_event
 
-VALID = {"event_id": "evt-1", "occurred_at": "2026-01-01T00:00:00Z", "source": "orders-api", "metric": "latency_ms", "value": 12}
+VALID = {
+    "event_id": "evt-1",
+    "occurred_at": "2026-01-01T00:00:00Z",
+    "source": "orders-api",
+    "metric": "latency_ms",
+    "value": 12,
+}
 
 
 class ContractTests(unittest.TestCase):

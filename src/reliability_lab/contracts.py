@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 REQUIRED_FIELDS = {"event_id", "occurred_at", "source", "metric", "value"}
@@ -32,7 +32,7 @@ def validate_event(raw: dict[str, Any]) -> dict[str, Any]:
         raise ContractViolation(f"unsupported metric: {metric!r}")
 
     value = raw["value"]
-    if isinstance(value, bool) or not isinstance(value, (int, float)):
+    if isinstance(value, bool) or not isinstance(value, int | float):
         raise ContractViolation("value must be numeric")
     if value < 0:
         raise ContractViolation("value must be non-negative")
@@ -46,7 +46,7 @@ def validate_event(raw: dict[str, Any]) -> dict[str, Any]:
         raise ContractViolation("occurred_at must be valid ISO-8601") from exc
     if parsed.tzinfo is None:
         raise ContractViolation("occurred_at must include a timezone")
-    parsed = parsed.astimezone(timezone.utc)
+    parsed = parsed.astimezone(UTC)
 
     return {
         "event_id": event_id.strip(),
