@@ -32,7 +32,7 @@ def validate_event(raw: dict[str, Any]) -> dict[str, Any]:
         raise ContractViolation(f"unsupported metric: {metric!r}")
 
     value = raw["value"]
-    if isinstance(value, bool) or not isinstance(value, (int, float)):
+    if isinstance(value, bool) or not isinstance(value, int | float):
         raise ContractViolation("value must be numeric")
     if value < 0:
         raise ContractViolation("value must be non-negative")
