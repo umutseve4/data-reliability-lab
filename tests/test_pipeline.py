@@ -100,9 +100,7 @@ class PipelineTests(unittest.TestCase):
             report["diagnostics"]["quarantine_reason_counts"],
             {"value must be non-negative": 1},
         )
-        self.assertEqual(
-            report["diagnostics"]["lineage"], {"edges": 1, "recorded_rows": 1}
-        )
+        self.assertEqual(report["diagnostics"]["lineage"], {"edges": 1, "recorded_rows": 1})
 
     def test_report_file_is_reproducible_json(self) -> None:
         ingest_records([event()], self.db)
@@ -122,9 +120,7 @@ class PipelineTests(unittest.TestCase):
 
         with self.connect() as db:
             bronze_count = db.execute("SELECT COUNT(*) FROM bronze_events").fetchone()[0]
-            quarantine_count = db.execute(
-                "SELECT COUNT(*) FROM quarantine_events"
-            ).fetchone()[0]
+            quarantine_count = db.execute("SELECT COUNT(*) FROM quarantine_events").fetchone()[0]
             statuses = db.execute(
                 "SELECT status, input_rows, accepted_rows, duplicate_rows, quarantined_rows "
                 "FROM pipeline_runs ORDER BY started_at"
@@ -153,9 +149,7 @@ class PipelineTests(unittest.TestCase):
         self.assertEqual(replay, {"attempted": 1, "replayed": 1, "still_invalid": 0})
         with self.connect() as db:
             bronze_count = db.execute("SELECT COUNT(*) FROM bronze_events").fetchone()[0]
-            row = db.execute(
-                "SELECT status, replayed_event_id FROM quarantine_events"
-            ).fetchone()
+            row = db.execute("SELECT status, replayed_event_id FROM quarantine_events").fetchone()
         self.assertEqual(bronze_count, 1)
         self.assertEqual((row["status"], row["replayed_event_id"]), ("replayed", "evt-1"))
 
