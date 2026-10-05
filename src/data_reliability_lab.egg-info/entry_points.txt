@@ -1,0 +1,2 @@
+[console_scripts]
+reliability-lab = reliability_lab.cli:main
