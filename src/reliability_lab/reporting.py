@@ -19,6 +19,16 @@ def build_report(db_path: str | Path, *, quarantine_slo: float = 0.05) -> dict:
     pending = db.execute(
         "SELECT COUNT(*) AS count FROM quarantine_events WHERE status='pending'"
     ).fetchone()["count"]
+    quarantine_reasons = {
+        row["reason"]: row["count"]
+        for row in db.execute(
+            """SELECT reason, COUNT(*) AS count FROM quarantine_events
+            GROUP BY reason ORDER BY count DESC, reason ASC"""
+        ).fetchall()
+    }
+    lineage_totals = db.execute(
+        "SELECT COUNT(*) AS edges, COALESCE(SUM(row_count), 0) AS rows FROM lineage_edges"
+    ).fetchone()
     input_rows = totals["input_rows"]
     ratio = totals["quarantined_rows"] / input_rows if input_rows else 0.0
     report = {
@@ -33,6 +43,13 @@ def build_report(db_path: str | Path, *, quarantine_slo: float = 0.05) -> dict:
             "input": input_rows,
             "quarantined": totals["quarantined_rows"],
             "pending_replay": pending,
+        },
+        "diagnostics": {
+            "quarantine_reason_counts": quarantine_reasons,
+            "lineage": {
+                "edges": lineage_totals["edges"],
+                "recorded_rows": lineage_totals["rows"],
+            },
         },
     }
     db.close()

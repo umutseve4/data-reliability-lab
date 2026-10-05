@@ -96,12 +96,62 @@ class PipelineTests(unittest.TestCase):
         report = build_report(self.db, quarantine_slo=0.05)
         self.assertFalse(report["slo"]["met"])
         self.assertEqual(report["slo"]["actual"], 0.5)
+        self.assertEqual(
+            report["diagnostics"]["quarantine_reason_counts"],
+            {"value must be non-negative": 1},
+        )
+        self.assertEqual(report["diagnostics"]["lineage"], {"edges": 1, "recorded_rows": 1})
 
     def test_report_file_is_reproducible_json(self) -> None:
         ingest_records([event()], self.db)
         output = Path(self.tmp.name) / "report.json"
         expected = write_report(self.db, output)
         self.assertEqual(json.loads(output.read_text()), expected)
+
+    def test_recovery_after_failure_preserves_invariants(self) -> None:
+        records = [event("evt-a"), event("evt-b"), {**event("evt-bad"), "value": -1}]
+        with self.assertRaisesRegex(RuntimeError, "injected"):
+            ingest_records(records, self.db, fail_after=1)
+        recovered = ingest_records(records, self.db)
+        self.assertEqual(
+            (recovered.accepted_rows, recovered.duplicate_rows, recovered.quarantined_rows),
+            (1, 1, 1),
+        )
+
+        with self.connect() as db:
+            bronze_count = db.execute("SELECT COUNT(*) FROM bronze_events").fetchone()[0]
+            quarantine_count = db.execute("SELECT COUNT(*) FROM quarantine_events").fetchone()[0]
+            statuses = db.execute(
+                "SELECT status, input_rows, accepted_rows, duplicate_rows, quarantined_rows "
+                "FROM pipeline_runs ORDER BY started_at"
+            ).fetchall()
+            lineage = db.execute(
+                "SELECT row_count FROM lineage_edges ORDER BY recorded_at"
+            ).fetchall()
+
+        self.assertEqual(bronze_count, 2)
+        self.assertEqual(quarantine_count, 1)
+        self.assertEqual(
+            [tuple(row) for row in statuses],
+            [("failed", 2, 1, 0, 0), ("success", 3, 1, 1, 1)],
+        )
+        self.assertEqual([row["row_count"] for row in lineage], [1])
+
+    def test_replay_repaired_duplicate_is_idempotent(self) -> None:
+        ingest_records([event("evt-1"), {**event("evt-bad"), "value": -1}], self.db)
+        with self.connect() as db:
+            db.execute(
+                "UPDATE quarantine_events SET payload=?",
+                (json.dumps(event("evt-1")),),
+            )
+            db.commit()
+        replay = replay_quarantine(self.db)
+        self.assertEqual(replay, {"attempted": 1, "replayed": 1, "still_invalid": 0})
+        with self.connect() as db:
+            bronze_count = db.execute("SELECT COUNT(*) FROM bronze_events").fetchone()[0]
+            row = db.execute("SELECT status, replayed_event_id FROM quarantine_events").fetchone()
+        self.assertEqual(bronze_count, 1)
+        self.assertEqual((row["status"], row["replayed_event_id"]), ("replayed", "evt-1"))
 
 
 if __name__ == "__main__":
