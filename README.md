@@ -8,7 +8,7 @@
 
 <p align="center">
   <a href="https://github.com/umutseve4/data-reliability-lab/actions/workflows/ci.yml"><img src="https://github.com/umutseve4/data-reliability-lab/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <img src="https://img.shields.io/badge/tests-15-FF4D4F?style=flat-square" alt="15 tests">
+  <img src="https://img.shields.io/badge/tests-17-FF4D4F?style=flat-square" alt="17 tests">
   <img src="https://img.shields.io/badge/python-3.11%20%C2%B7%203.12%20%C2%B7%203.13-FF4D4F?style=flat-square" alt="Python 3.11, 3.12, 3.13">
 </p>
 
@@ -63,7 +63,7 @@ bronze_events (event_id PK, INSERT OR IGNORE) <------------------------------+
 - persisted success **and failure** runs;
 - source-to-target lineage evidence;
 - JSON SLO report for quarantine ratio, failed runs and pending replay;
-- 15 unit and integration tests;
+- 17 unit and integration tests;
 - Python 3.11, 3.12 and 3.13 CI matrix;
 - non-root container and hardened Compose defaults.
 
@@ -93,10 +93,33 @@ of `0.05` by default.
 Status vocabulary used in this repository:
 
 - **Implemented:** the vertical slice and its tests are present.
-- **Locally tested:** all `15` tests and the end-to-end smoke run passed in the development environment.
+- **Locally tested:** all `17` tests and the end-to-end smoke run passed in the development environment.
 - **Remotely verified:** only after the current `main` GitHub Actions run passes for lint, format, Python 3.11/3.12/3.13 tests, CLI smoke and container smoke.
 - **Deployed:** not applicable; this is an executable lab, not a hosted service.
 - **Production-ready:** no.
+
+## Deterministic failure/recovery drill
+
+```bash
+rm -rf artifacts && mkdir -p artifacts
+reliability-lab run --source data/events.jsonl --db artifacts/recovery.db --fail-after 1 || true
+reliability-lab run --source data/events.jsonl --db artifacts/recovery.db
+python - <<'PY'
+import sqlite3
+db = sqlite3.connect("artifacts/recovery.db")
+print(db.execute("SELECT status,input_rows,accepted_rows,duplicate_rows,quarantined_rows FROM pipeline_runs ORDER BY started_at").fetchall())
+print(db.execute("SELECT COUNT(*) FROM bronze_events").fetchone()[0])
+print(db.execute("SELECT COUNT(*) FROM quarantine_events").fetchone()[0])
+print(db.execute("SELECT row_count FROM lineage_edges ORDER BY recorded_at").fetchall())
+PY
+```
+
+Expected deterministic invariants:
+
+- run status tuples are exactly `[('failed', 2, 1, 0, 0), ('success', 3, 1, 1, 1)]`;
+- `bronze_events` count is `2`;
+- `quarantine_events` count is `1`;
+- lineage `row_count` rows are exactly `[(1,)]`.
 
 ## Next acceptance gate
 
